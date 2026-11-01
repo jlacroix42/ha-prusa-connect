@@ -214,8 +214,15 @@ async def _follow_redirects_for_code(
     session: aiohttp.ClientSession,
     url: str,
 ) -> str | None:
-    """Follow redirect chain until we capture the authorization code."""
+    """Follow redirect chain until we capture the authorization code.
+
+    After a successful login Prusa Account may answer with an interstitial
+    page instead of a redirect, for example ``/passkeys/offer/`` (seen since
+    autumn 2026). Such a page keeps the OAuth target in its ``next`` query
+    parameter; it is followed once with the now logged-in session.
+    """
     max_redirects = 10
+    followed_next = False
     for _ in range(max_redirects):
         if not url:
             return None
@@ -237,8 +244,15 @@ async def _follow_redirects_for_code(
                 redirect_qs = parse_qs(redirect_parsed.query)
                 if "code" in redirect_qs:
                     return redirect_qs["code"][0]
-            else:
-                return None
+                continue
+
+            # Interstitial page: continue with its "next" target, once.
+            next_target = qs.get("next")
+            if next_target and not followed_next:
+                followed_next = True
+                url = next_target[0]
+                continue
+            return None
 
     return None
 
