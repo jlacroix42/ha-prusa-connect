@@ -59,6 +59,13 @@ class PrusaConnectPrintPreview(PrusaConnectEntity, ImageEntity):
             return job.get("thumbnailUrl")
         return None
 
+    async def async_image(self) -> bytes | None:
+        """Fetch the preview through the API client (the URL needs the token)."""
+        url = self.image_url
+        if not url:
+            return None
+        return await self.coordinator.api.fetch_bytes(url)
+
     @property
     def image_last_updated(self) -> datetime | None:
         """Track when the image changes (new job = new image)."""

@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 import aiohttp
 from homeassistant.components.camera import Camera
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import PrusaConnectPrinterCoordinator
@@ -83,18 +82,12 @@ class PrusaConnectCamera(PrusaConnectEntity, Camera):
             return None
 
         try:
-            # Prusa snapshot URLs are pre-signed, no auth needed
-            session = async_get_clientsession(self._hass)
-            async with session.get(
-                url, timeout=aiohttp.ClientTimeout(total=10)
-            ) as resp:
-                if resp.status == 200:
-                    return await resp.read()
-                _LOGGER.debug(
-                    "Failed to fetch snapshot for %s: HTTP %s",
-                    self._printer_uuid,
-                    resp.status,
-                )
+            # Snapshot URLs on camera-service-snapshots.prusa3d.com require
+            # the same bearer token as the API, so go through the client.
+            image = await self.coordinator.api.fetch_bytes(url)
+            if image:
+                return image
+            _LOGGER.debug("No snapshot returned for %s", self._printer_uuid)
         except (aiohttp.ClientError, TimeoutError) as err:
             _LOGGER.debug(
                 "Error fetching snapshot for %s: %s",

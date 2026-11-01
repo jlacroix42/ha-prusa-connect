@@ -5,8 +5,12 @@ from typing import Final
 
 DOMAIN: Final = "prusa_connect"
 
-# API endpoints
-API_BASE_URL: Final = "https://connect-mobile-api.prusa3d.com"
+# API endpoints.
+# The web application's REST API (same token as the browser session) and its
+# GraphQL endpoint, which is where camera snapshot URLs come from.
+API_BASE_URL: Final = "https://connect.prusa3d.com"
+API_PREFIX: Final = "/app"
+GRAPHQL_URL: Final = "https://connect-api.prusa3d.com/graphql"
 AUTH_AUTHORIZE_URL: Final = "https://account.prusa3d.com/o/authorize/"
 AUTH_TOKEN_URL: Final = "https://account.prusa3d.com/o/token/"
 AUTH_LOGIN_URL: Final = "https://account.prusa3d.com/login/"
