@@ -46,13 +46,32 @@ class PrusaConnectCamera(PrusaConnectEntity, Camera):
         """Get the snapshot URL from printer data."""
         printer = self._printer_data
 
-        # Try cameras list first
+        # Try cameras list first (printer detail carries Camera resources)
         cameras = printer.get("cameras") or []
         if cameras and self._camera_index < len(cameras):
             cam = cameras[self._camera_index]
-            return cam.get("snapshotUrl") or cam.get("imageUrl")
+            if isinstance(cam, dict):
+                url = cam.get("snapshotUrl") or cam.get("imageUrl")
+                if url:
+                    return url
 
-        # Fall back to top-level snapshot URL
+        # The printer's default snapshot (mobile API, 2026)
+        default = printer.get("defaultSnapshot")
+        if isinstance(default, dict):
+            url = default.get("snapshotUrl") or default.get("url")
+            if url:
+                return url
+        snapshots = printer.get("snapshots")
+        if isinstance(snapshots, dict):
+            for entry in snapshots.values():
+                if isinstance(entry, dict):
+                    url = entry.get("snapshotUrl") or entry.get("url")
+                    if url:
+                        return url
+                elif isinstance(entry, str) and entry.startswith("http"):
+                    return entry
+
+        # Fall back to top-level snapshot URL (older shapes)
         return printer.get("snapshotUrl") or printer.get("cameraUrl")
 
     async def async_camera_image(
